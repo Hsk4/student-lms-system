@@ -1,0 +1,1225 @@
+Mujhe ek Next.js 14 (App Router) + TypeScript + Tailwind CSS + shadcn/ui 
+admin dashboard banana hai. SIRF FRONTEND banao, koi backend/API/database/auth 
+nahi. Koi login/signup page bhi NAHI chahiye - direct dashboard open hoga. 
+Saara data dummy/mock hona chahiye (hardcoded arrays, local state).
+
+=== PROJECT SETUP ===
+- Next.js App Router, TypeScript, Tailwind CSS
+- shadcn/ui components install karo (button, input, table, dialog, dropdown-menu, 
+  select, sheet, skeleton, badge, avatar, switch, separator, etc.)
+- next-themes package use karo (light/dark mode ke liye)
+- lucide-react icons use karo
+- Root page (app/page.tsx) direct /admin route pe redirect kare (redirect() 
+  function se), koi login/auth check nahi
+
+=== THEME (Cream & Maroon) ===
+Ye exact color tokens globals.css mein CSS variables ke tor pe define karo 
+(light mode), aur ek matching DARK mode variant bhi khud generate karo (same 
+maroon accent, dark background/foreground ke saath):
+
+Light mode:
+--background: #FBF8F3       (page background - cream)
+--card: #FFFFFF              (tiles, tables, forms)
+--secondary: #F3EBE4         (sidebar, table headers, input wells)
+--border: #E8DFD6            (hairline borders)
+--foreground: #2A1A20        (body/heading text - warm near-black)
+--muted-foreground: #6E5A60  (captions, labels)
+--primary: #7F1D3A           (buttons, active nav, links)
+--primary-hover: #6A1830     (hover/pressed state)
+--accent: #F1E3E6            (selected rows, active nav bg, chips)
+--ring: #7F1D3A              (focus ring)
+
+Dark mode: same maroon primary feel (jese #A8344F thora lighter for contrast), 
+dark warm background (jese #1C1214), dark card (#2A1A20), proper contrast 
+muted text. Maroon accent dono modes mein barkarar rahe.
+
+Settings page mein ek THEME section banao jahan user:
+1. Light / Dark / System mode switch kar sake (button group UI, icons ke saath 
+   - sun/moon/monitor, shadcn + lucide-react se)
+2. Switch turant poori app pe apply ho (background, text, card, border - sab 
+   kuch theme ke hisab se badle, sirf ek component nahi)
+
+=== FOLDER STRUCTURE (isi tarah banao) ===
+src/
+├── app/
+│   ├── layout.tsx
+│   ├── page.tsx                      (redirect to /admin)
+│   ├── globals.css
+│   ├── admin/
+│   │   ├── layout.tsx                (sidebar + header wrap)
+│   │   ├── page.tsx                  (redirect to requests)
+│   │   ├── requests/
+│   │   │   ├── page.tsx
+│   │   │   ├── requests-table.tsx
+│   │   │   ├── request-role-picker.tsx
+│   │   │   └── types.ts
+│   │   ├── users/
+│   │   │   ├── page.tsx
+│   │   │   └── users-table.tsx
+│   │   ├── boards/
+│   │   │   ├── page.tsx
+│   │   │   └── boards-table.tsx
+│   │   ├── courses/
+│   │   │   ├── page.tsx
+│   │   │   └── courses-table.tsx
+│   │   ├── books/
+│   │   │   ├── page.tsx
+│   │   │   └── books-table.tsx
+│   │   ├── invoices/
+│   │   │   ├── page.tsx
+│   │   │   └── invoices-table.tsx
+│   │   ├── tickets/
+│   │   │   ├── page.tsx
+│   │   │   └── tickets-table.tsx
+│   │   ├── audit-log/
+│   │   │   ├── page.tsx
+│   │   │   └── audit-log-table.tsx
+│   │   ├── analytics/
+│   │   │   └── page.tsx
+│   │   ├── admins/
+│   │   │   ├── page.tsx
+│   │   │   └── admins-table.tsx
+│   │   └── settings/
+│   │       └── page.tsx              (theme section yahan)
+│   ├── student/
+│   │   ├── layout.tsx
+│   │   └── page.tsx                  (placeholder "Coming soon")
+│   ├── teacher/
+│   │   ├── layout.tsx
+│   │   └── page.tsx                  (placeholder "Coming soon")
+│   └── parent/
+│       ├── layout.tsx
+│       └── page.tsx                  (placeholder "Coming soon")
+├── components/
+│   ├── ui/                           (shadcn components auto-generate honge)
+│   ├── layout/
+│   │   ├── admin-sidebar.tsx
+│   │   ├── admin-header.tsx
+│   │   ├── mobile-nav-sheet.tsx
+│   │   └── nav-config.ts
+│   └── shared/
+│       ├── list-toolbar.tsx
+│       ├── pagination.tsx
+│       ├── empty-state.tsx
+│       ├── loading-skeleton.tsx
+│       └── error-state.tsx
+├── features/
+│   └── roles/
+│       ├── role-picker.tsx
+│       └── permissions.ts
+├── hooks/
+│   ├── use-pagination.ts
+│   ├── use-debounced-search.ts
+│   └── use-current-user.ts           (mock role state yahan)
+├── lib/
+│   └── utils.ts
+├── providers/
+│   └── theme-provider.tsx
+└── types/
+    └── user.ts
+
+=== SIDEBAR ===
+Order: Requests, Users, Boards, Courses, Books, Invoices, Tickets, Audit log, 
+Analytics. Super admin ko extra "Admins" item bhi dikhe (end mein, divider ke 
+baad).
+- Desktop: fixed left sidebar
+- Mobile: hamburger icon se slide-in drawer (shadcn Sheet component use karo)
+- Active route highlight ho (--accent background + --primary text/icon)
+- Har item ka icon ho (lucide-react se)
+
+=== HAR ADMIN LIST PAGE MEIN YE HONA CHAHIYE ===
+1. List toolbar: search input + filter dropdowns (status, date range - dummy 
+   options)
+2. Table (shadcn table component) with mock data (10-15 dummy rows per page)
+3. Pagination: PAGE NUMBERS style, 20 rows per page
+4. Empty state: jab filter se koi result na mile, designed icon + message
+5. Loading skeleton: shimmer/skeleton rows (simulate with setTimeout, kyunki 
+   backend nahi hai)
+6. Error state: retry button ke saath designed error card (manually trigger 
+   karne ka tareeqa ho, jese ek toggle button dev ke liye)
+
+=== ROLE PERMISSION LOGIC (Demo ke liye, bina real auth ke) ===
+- use-current-user.ts hook mein ek simple useState based mock user hoga 
+  (role: "admin" | "super_admin")
+- Header mein ek chhota switch/dropdown "View as: Admin / Super Admin" - isse 
+  main dono roles ka view test kar sakoon
+- Agar current view "Admin" hai (super_admin nahi), to:
+  - Sidebar mein "Admins" item HIDE ho
+  - Requests page ke role-picker dropdown mein "admin" aur "super_admin" 
+    options HIDE hon (sirf student, teacher, parent dikhen)
+- Agar "Super Admin" view hai, to sab kuch dikhe
+
+=== UI QUALITY ===
+- Clean, modern, spacious padding, rounded corners (rounded-lg/xl)
+- Subtle shadows on cards
+- Smooth transitions (hover states, theme switch animate ho)
+- Proper typography hierarchy (bold headings, muted labels)
+- Fully responsive: mobile par sidebar hide/drawer ho, table horizontally 
+  scrollable ho chhoti screen par
+
+Student, Teacher, Parent panels abhi sirf simple placeholder page banao 
+("Coming soon" message, center mein) - baad mein inhe bhi admin jaisa banayenge.
+
+Pehle project setup + theme + layout + sidebar karo, phir ek-ek karke saare 
+admin list pages banao (requests se start karo).
+
+
+
+
+
+=====================================================================
+STUDENT DASHBOARD PROMPT (isi project ke andar banao, admin wale 
+pattern se - niche di gayi tamam details follow karo)
+=====================================================================
+
+Ab isi Next.js project mein STUDENT DASHBOARD banao. Yeh admin dashboard 
+jis pattern se bana hai (src/app/admin/... + components/features/hooks 
+split) BILKUL WAHI pattern follow karo student ke liye. SIRF FRONTEND/UI 
+banana hai, koi backend/API/database nahi likhna. Saara data dummy/mock 
+hoga (hardcoded arrays, local state).
+
+=== GLOBALS.CSS / THEME ===
+Koi nayi theme nahi banani. Jo globals.css admin dashboard ke liye bana 
+tha (cream aur maroon color tokens - background #FBF8F3, card #FFFFFF, 
+secondary #F3EBE4, border #E8DFD6, foreground #2A1A20, muted-foreground 
+#6E5A60, primary #7F1D3A, accent #F1E3E6, ring #7F1D3A - light aur dark 
+dono mode) wahi tokens use karo. Koi dusri file edit nahi karni, koi naya 
+color system nahi banana, koi alag/alag-alag rangon wale "cartoon" style 
+cards nahi - admin dashboard jitni hi clean, professional, minimal UI 
+honi chahiye, same look and feel.
+
+=== FOLDER STRUCTURE (isi project, isi app/ folder ke andar, admin ke 
+    jese hi pattern se) ===
+
+src/app/student/
+├── layout.tsx                        (student sidebar + header wrap)
+├── page.tsx                          (Home - /student)
+├── teachers/
+│   ├── page.tsx                      (Pick a teacher)
+│   ├── teacher-card.tsx
+│   ├── teacher-filters.tsx
+│   └── request-teacher-dialog.tsx
+├── courses/
+│   ├── page.tsx                      (My courses list)
+│   ├── courses-list.tsx
+│   └── [id]/
+│       ├── page.tsx                  (One course - tabs)
+│       ├── course-tabs.tsx
+│       ├── overview-tab.tsx
+│       ├── assignments-tab.tsx
+│       ├── materials-tab.tsx
+│       ├── attendance-tab.tsx
+│       └── grades-tab.tsx
+├── books/
+│   └── page.tsx                      (Recommended books, grouped by course)
+├── assignments/
+│   ├── page.tsx                      (To do / Submitted / Graded tabs)
+│   ├── assignments-table.tsx
+│   └── [id]/
+│       ├── page.tsx                  (One assignment detail)
+│       ├── submission-area.tsx
+│       └── file-upload-zone.tsx
+├── invoices/
+│   ├── page.tsx                      (Fees)
+│   └── invoices-table.tsx
+├── support/
+│   ├── page.tsx                      (Tickets list + New ticket dialog)
+│   ├── tickets-table.tsx
+│   ├── new-ticket-dialog.tsx
+│   └── [id]/
+│       ├── page.tsx                  (One ticket - conversation view)
+│       └── ticket-conversation.tsx
+├── quizzes/
+│   ├── page.tsx                      (Past quizzes + New quiz)
+│   ├── quiz-history-table.tsx
+│   ├── new-quiz-dialog.tsx
+│   ├── take/
+│   │   └── page.tsx                  (one-question-per-screen flow)
+│   └── result/
+│       └── page.tsx                  (score + review)
+└── assistant/
+    └── page.tsx                      (AI Assistant full page)
+
+src/app/onboarding/
+└── parent/
+    └── page.tsx                      (Add a parent - no sidebar)
+
+=== SHARED/REUSED COMPONENTS ===
+Admin wale `components/shared/` (list-toolbar, pagination, empty-state, 
+loading-skeleton, error-state) ko hi reuse karo student pages mein - naye 
+duplicate mat banao, same import path se use karo.
+
+components/layout/ mein student ke liye alag se banao (admin wale se mix 
+mat karna):
+- student-sidebar.tsx
+- student-header.tsx
+- student-mobile-nav-sheet.tsx
+- student-nav-config.ts
+
+components/shared/ai-assistant/
+- ai-assistant-fab.tsx    (floating button - sidebar ke ANDAR NAHI, 
+                            sidebar ke bahar/alag se, screen pe fixed 
+                            jese bottom-right corner mein ek round icon 
+                            button, click karte hi /student/assistant 
+                            page pe le jaye)
+- assistant-chat-panel.tsx (chat UI: messages list + input box, dummy 
+                            canned responses abhi, koi real AI call nahi)
+
+=== PAGE FRAME (har student page mein) ===
+- Header row: page title left side, ek line subtitle niche, primary 
+  action right side. Phone pe action subtitle ke neeche full width chala 
+  jaye.
+- Content ek column sections ka, consistent gap, max-width ~1100px, 
+  sidebar ke bagal mein centred.
+- Sidebar order: Home, Teachers, My courses, Assignments, Invoices, 
+  Books, Quizzes (abhi hidden rakho, flag se control karo - F7 feature), 
+  Support. Active item clearly highlighted (accent bg + primary text, 
+  jese admin sidebar mein tha).
+- Phone: sidebar top bar ban jaye with hamburger menu button jo list 
+  kholay (sheet component - admin jesa hi pattern).
+- AI Assistant ka button sidebar navigation list mein NAHI aayega - 
+  alag floating button hoga jo hamesha visible rahe (page frame ke 
+  bahar, fixed position).
+
+=== ONBOARDING: /onboarding/parent ===
+- Koi sidebar nahi. Ek centred card: short explanation text, do fields 
+  (Parent's name, Parent's email), ek button "Send invite".
+- Send karne ke baad same card confirmation dikhaye: parent ka naam + 
+  email, "Resend" link, "Add another parent" option, "Continue" button.
+- Error states design karo (UI only): invalid email, email already has 
+  account, failed to send - inline error messages.
+- Dummy state/useState se flow simulate karo (loading → success).
+
+=== HOME: /student ===
+- Row 1: greeting with student's (dummy) name, board aur level small 
+  labels/badges ke sath.
+- Row 2: "My teachers" - ek card per enrollment (teacher name, subject, 
+  "Class" ya "One-on-one" badge, next class time, status badge agar 
+  requested hai). Agar koi enrollment nahi (mock empty case), ek wide 
+  card "Choose a teacher" button ke sath, neeche ke rows hide.
+- Row 3 (desktop 2 columns): left "Due soon" (next 5 dummy assignments, 
+  "See all" link), right stacked: "Fees due" card + "Books" (first 3 
+  dummy).
+- Phone: ek column - greeting, teachers, due soon, fees, books.
+
+=== TEACHERS: /student/teachers ===
+- Top: subject filter chips (dummy subjects), phone pe "Filters" button 
+  jo sheet kholay.
+- Grid: teacher cards (3 desktop / 2 tablet / 1 phone) - name, subjects, 
+  classes open/closed status, "Request" button.
+- Request click → dialog (phone pe bottom sheet): teacher confirm, 
+  course choose (agar multiple), optional note textarea, "Send request" 
+  button.
+- Request bhejne ke baad card pe "Request sent" + button disabled 
+  (useState se simulate). Declined wala "Declined" badge + "pick someone 
+  else" option.
+- Empty state: "No teachers match this board and level yet" + Contact 
+  support link.
+
+=== MY COURSES: /student/courses ===
+- List, ek row per enrollment: Subject · Level · Board, teacher name, 
+  Class/One-on-one badge, status badge (requested/active/declined/ended), 
+  "3 of 5 assignments done" line. Row click → course detail.
+- Course detail (/student/courses/[id]): header (course name + teacher), 
+  tabs: Overview, Assignments, Materials, Attendance, Grades (phone pe 
+  tabs horizontally scroll).
+- Materials tab: list - title, type badge, download icon/button (dummy).
+- Attendance tab: month calendar ya date-list, present/absent badges 
+  (dummy data).
+
+=== ASSIGNMENTS: /student/assignments ===
+- Tabs: To do / Submitted / Graded. Har tab ek table (title, course, due 
+  date, status badge, score). Phone pe har row stacked card ban jaye.
+- Detail (/student/assignments/[id]): title + course top pe, due date, 
+  teacher instructions, phir submission area.
+- Submission area: textarea + file upload zone (drag-drop + button, file 
+  name/size dikhaye, galat type/size pe error message - UI only, real 
+  upload nahi). Submit ke baad read-only view (kya bheja, kab bheja). 
+  Graded hone pe score + feedback upar dikhaye.
+- Form ko "lock/unlock" kar sakna chahiye - ek prop/flag se edit on/off 
+  switch ho sake (resubmission rule abhi decide nahi, isliye flexible 
+  rakho).
+- Phone pe bottom sticky bar mein "Submit" button.
+
+=== FEES: /student/invoices ===
+- Top strip: total due now + next due date.
+- Table: period, amount ("Rs 12,000" format), due date, status badge. 
+  Koi payment button NAHI (admin hi mark karega paid - abhi UI mein bhi 
+  mat rakhna).
+- Phone: stacked cards.
+- Empty state: "No invoices yet."
+
+=== BOOKS: /student/books ===
+- Course ke hisab se grouped. Har row: title, author, short note. Koi 
+  price/buy link nahi. Per-course empty state.
+
+=== SUPPORT: /student/support ===
+- Tickets list: subject, last update, status badge + "New ticket" 
+  (dialog: subject + message fields).
+- Ticket detail: messages conversation style (time order), reply box 
+  fixed bottom, status header mein dikhe. Resolved hone pe reply box 
+  hide.
+
+=== QUIZZES: /student/quizzes (abhi hidden/flag ke peeche, F7) ===
+- Past quizzes list (course, score) + "New quiz" dialog (enrolled course 
+  pick, optional material, "Start").
+- Take quiz (/student/quizzes/take): one question per screen, progress 
+  indicator (dots/bar), Back/Next buttons, final "Submit".
+- Result page (/student/quizzes/result): score + har question ka review.
+
+=== AI ASSISTANT ===
+- Ek floating action button (FAB) banao jo har student page pe dikhe 
+  (sidebar navigation list ke ANDAR shamil NAHI karna - yeh alag se, 
+  screen pe fixed position mein, jese bottom-right corner, round icon 
+  button with AI/sparkle icon).
+- Click karte hi /student/assistant page khule - simple chat UI: 
+  messages list (student ke messages right side, AI ke left side), input 
+  box neeche, Send button.
+- Abhi koi real AI backend nahi - 2-3 dummy canned responses 
+  (setTimeout se "typing..." simulate karke dikhao). Baad mein isi UI ke 
+  peeche Gemini API connect hogi, isliye component ko clean/modular 
+  banao (ek sendMessage function ho jo abhi mock response return kare, 
+  taake baad mein wahi function real API call se replace ho sake).
+
+=== BEHAVIOUR RULES (har student screen pe) ===
+- ~640px se neeche tables stacked cards ban jayen. Filters sheet ban 
+  jayen. Dialogs bottom sheet ban jayen.
+- Har page ka loading skeleton, empty state, error state design hona 
+  chahiye (admin wale shared components use karo) - kabhi blank area 
+  nahi dikhni chahiye.
+- Dates "Thu 22 Oct, 5:00 PM" format mein. Amounts "Rs 12,000" format 
+  mein.
+- Forms field ke bagal error dikhayen, jo type kiya wo preserve rahe. 
+  Buttons submit ke time busy/loading state dikhayen.
+- Keyboard accessible: dialogs focus trap + Escape se close, tabs arrow 
+  keys se navigate hon.
+- Yeh sab abhi SIRF static/mock data hai - koi API call, koi real 
+  submit, koi real auth nahi.
+
+=== IMPORTANT ===
+- Koi existing admin file edit NAHI karni (globals.css, admin/ folder, 
+  shared components ke defaults) - sirf naya student/ folder aur uske 
+  components/hooks add karne hain.
+- Shared components (list-toolbar, pagination, empty-state, 
+  loading-skeleton, error-state) same reuse karo, duplicate mat banao.
+- Naya alag color scheme ya "cartoon"/playful UI bilkul nahi - admin 
+  dashboard jitni hi professional, clean, minimal look honi chahiye.
+- Koi backend/API route, database, ya auth logic bilkul mat likhna - 
+  sirf UI + dummy state.
+
+Pehle layout.tsx + student-sidebar + student-header + nav-config banao, 
+phir ek-ek page banao: Home se start karo, phir Teachers, Courses, 
+Assignments, Invoices, Books, Support, aur end mein Quizzes + AI 
+Assistant + Onboarding parent page.
+
+
+
+
+
+=====================================================================
+PARENT DASHBOARD PROMPT (isi project ke andar banao, admin aur 
+student wale hi pattern se - niche di gayi tamam details follow karo)
+=====================================================================
+
+Ab isi Next.js project mein PARENT DASHBOARD banao. Admin aur student 
+dashboard jis pattern se bane hain (src/app/admin/..., src/app/student/... 
++ components/features/hooks split), BILKUL WAHI pattern follow karo parent 
+ke liye. SIRF FRONTEND/UI banana hai, koi backend/API/database nahi likhna. 
+Saara data dummy/mock hoga (hardcoded arrays, local state) - lekin code 
+itna CLEAN aur modular hona chahiye ke baad mein backend connect karte 
+waqt koi dikkat na ho (data types clearly defined hon, components props 
+se data lein, hardcoded data ek jagah/mock files mein centralized ho).
+
+=== GLOBALS.CSS / THEME ===
+Koi nayi theme NAHI banani, koi change nahi karni. Jo globals.css admin 
+aur student dashboard dono ke liye use ho raha hai (cream/maroon tokens - 
+background #FBF8F3, card #FFFFFF, secondary #F3EBE4, border #E8DFD6, 
+foreground #2A1A20, muted-foreground #6E5A60, primary #7F1D3A, accent 
+#F1E3E6, ring #7F1D3A, light+dark mode) EXACT WAHI use karo. Admin aur 
+student dono dashboards ki theme mein IS TASK KE BAAD BHI koi farak nahi 
+aana chahiye - sirf parent ke liye naya folder add ho raha hai, koi 
+shared file edit nahi honi.
+
+=== FOLDER STRUCTURE (isi project, admin/student ke jese hi pattern se) ===
+
+src/app/parent/
+├── layout.tsx                        (parent shell: sidebar desktop + 
+│                                       bottom tab bar mobile)
+├── page.tsx                          (P1 - Home)
+├── children/
+│   ├── page.tsx                      (P2 - Children list)
+│   └── [id]/
+│       ├── page.tsx                  (P3 - Child detail, tabs wrapper)
+│       ├── child-header-card.tsx
+│       ├── child-tabs.tsx
+│       ├── overview-tab.tsx
+│       ├── grades-tab.tsx
+│       ├── attendance-tab.tsx
+│       ├── assignments-tab.tsx
+│       └── teachers-tab.tsx
+├── fees/
+│   ├── page.tsx                      (P4 - Fees and invoices)
+│   ├── invoices-table.tsx
+│   └── invoice-detail-drawer.tsx
+├── meetings/
+│   ├── page.tsx                      (P5 - Meetings, 3 tabs)
+│   ├── upcoming-tab.tsx
+│   ├── requests-tab.tsx
+│   ├── past-tab.tsx
+│   └── request-meeting-dialog.tsx
+├── support/
+│   └── page.tsx                      (P6 - contact card, Option B default)
+└── profile/
+    └── page.tsx                      (P7 - profile + notification settings)
+
+src/app/invite/
+└── [token]/
+    └── page.tsx                      (P0 - invite acceptance, no shell)
+
+=== SHARED/REUSED ===
+- components/shared/ (list-toolbar, pagination, empty-state, 
+  loading-skeleton, error-state) same reuse karo jo admin/student mein 
+  use ho rahe hain - naye duplicate nahi banane.
+- components/layout/ mein parent ke liye alag se banao (admin/student 
+  se mix mat karna):
+  - parent-sidebar.tsx          (desktop, 240px, collapsible)
+  - parent-topbar.tsx           (desktop top bar: page title + child 
+    switcher + bell + user menu)
+  - parent-bottom-tabs.tsx      (mobile bottom tab bar: Home, Children, 
+    Fees, Meetings, More)
+  - parent-mobile-topbar.tsx    (mobile top: logo, compact child 
+    switcher, bell)
+  - parent-nav-config.ts
+- components/shared/child-switcher.tsx  (dropdown/chips: "All children" 
+  + each linked child; agar sirf ek child linked hai to switcher 
+  automatically hide ho, UI mein ye condition dummy state se simulate 
+  karo)
+- components/shared/notifications-drawer.tsx  (P8 - bell click pe khule, 
+  desktop pe right panel, mobile pe full-screen sheet; Today/Earlier 
+  groups, per-child filter, "Mark all read")
+
+=== PARENT SHELL (layout.tsx) ===
+Desktop:
+- Left sidebar 240px, collapsible: logo, nav items (Home, Children, 
+  Fees, Meetings, Support, Profile), bottom mein parent card (avatar, 
+  name, "Parent" label).
+- Top bar: page title left, right side child switcher + bell (unread 
+  count badge, dummy) + user menu dropdown.
+- Content max-width ~1100px.
+
+Mobile (390px base design, phir desktop tak expand karo):
+- Top bar: logo, compact child switcher dropdown, bell icon.
+- Bottom tab bar (5 tabs, fixed): Home · Children · Fees · Meetings · 
+  More. "More" tap karne se sheet khule jisme Support, Profile, Sign 
+  out (UI only) hon.
+- Koi hamburger drawer nahi - sab kuch bottom tabs se ek tap mein 
+  pohonchna chahiye.
+
+Har page pe teen states design karo: loading skeleton, empty state 
+(icon + ek line + action), error state (retry button) - admin/student 
+wale shared components reuse karke.
+
+=== CHILD SWITCHER RULES ===
+- Options: "All children" (Home pe default) + har linked child (dummy 
+  list, 2-3 children).
+- Selection Fees, Meetings aur Notifications drawer ke across persist 
+  rahe (useState/context se simulate karo).
+- Agar sirf ek child linked hai (dummy flag se test karo), switcher UI 
+  se hide ho jaye aur sab kuch us ek child pe auto-scope ho jaye.
+
+=== P0: /invite/[token] (no shell, koi sidebar nahi) ===
+- Centered single card.
+- Valid token case: logo, "[Student name] invited you to follow their 
+  progress", niche sign-up form placeholder (email field pre-filled + 
+  disabled/locked look), aur ek short line "Parents can see grades, 
+  attendance and fees."
+- Success case (dummy simulate): "You're all set" confirmation.
+- Invalid/expired/used token case: error card with reason + "Ask your 
+  child to send a new invite" message.
+- Already signed in (different role) case: card with "Sign out to 
+  accept this invite" message.
+(Sab dummy states hain, ek toggle/select se switch karke dikhane layak 
+banao taake main sab states test kar sakoon.)
+
+=== P1: /parent (Home) ===
+- Row 0: greeting "Good evening, [name]" + aaj ki date, niche child 
+  switcher (desktop).
+- Row 1: child summary cards - ek per child (mobile pe horizontal 
+  swipe carousel): avatar, name, board/level, attendance ring (%), 
+  average grade, "X assignments due this week", "View details" link 
+  (→ P3).
+- Row 2, desktop 2 columns (60/40):
+  - Upcoming (next 7 days): ek chronological list - assignments, 
+    sessions, meetings, invoice due dates mix - type icon, title, 
+    child tag, date/time.
+  - Alerts: attendance below threshold, missing assignment, overdue 
+    invoice, new teacher feedback - severity icon + link. Empty: 
+    "Nothing needs your attention."
+- Row 3, desktop 2 columns (60/40):
+  - Recent grades table: child, subject, assignment, grade, date 
+    (5 rows + "View all" → Grades tab).
+  - Fee status card: outstanding total, next due date, "View 
+    invoices" button.
+- Mobile: single column order - Alerts → child cards → Upcoming → 
+  Recent grades → Fees (Alerts sabse upar, mobile pe priority).
+
+=== P2: /parent/children ===
+- Header: title + "X children linked" count.
+- Card grid (2 col desktop, 1 col mobile): photo, name, board/level, 
+  subject chips, teacher name(s), enrollment status chip (Active / 
+  Awaiting teacher / No enrollment). Pura card clickable → P3.
+- Empty state: "No children linked yet. Ask your child to send you an 
+  invite."
+
+=== P3: /parent/children/[id] (Child Detail) ===
+- Header card: photo, name, board/level, enrolled subjects (teacher ke 
+  sath har ek), "Request meeting" button (pre-fills P5 dialog).
+- Breadcrumb: Children / [Child name].
+- Tabs (horizontally scroll on mobile): Overview · Grades · Attendance 
+  · Assignments · Teachers
+
+Overview tab: 4 stat cards (avg grade, attendance %, assignments 
+completed, upcoming deadlines), grade trend line chart (last 30 days / 
+term selector - recharts use karo), latest teacher feedback (3 items: 
+teacher, subject, date, excerpt).
+
+Grades tab: ek expandable card per subject - collapsed: subject, 
+teacher, average, mini trend sparkline; expanded: assignments list 
+(score, max score, date, teacher comment).
+
+Attendance tab: summary row (Present/Absent/Late/Excused counts, 
+selected month), month calendar grid with status marker per day + 
+month nav arrows, niche absences/lates list (date, subject, reason). 
+READ-ONLY - koi edit option bilkul nahi.
+
+Assignments tab: filter chips (All, Due, Submitted, Missing, Graded), 
+table (title, subject, due date, status chip, grade) - row expand se 
+teacher feedback dikhe. READ-ONLY - koi submit button nahi.
+
+Teachers tab: ek contact card per teacher - name, subject, session 
+type (class/one-on-one), schedule summary, "Request meeting" button.
+
+=== P4: /parent/fees ===
+- Summary strip (3 cards): Total outstanding, Next due date, Paid this 
+  term.
+- Controls: child filter dropdown, status tabs (All, Due, Paid, 
+  Overdue).
+- Invoice table: invoice number, child, period, amount ("Rs 12,000" 
+  format), due date, status chip, "View" action.
+- Mobile: table → stacked cards, amount + status chip prominent.
+- Invoice detail: desktop pe right-side drawer, mobile pe full-screen 
+  sheet - line items, issue/due dates, status, paid-on date (if any), 
+  print/download button (UI only).
+- KOI PAY BUTTON NAHI - payments admin record karta hai, isliye UI mein 
+  bhi bilkul mat rakhna.
+- Empty state: "No invoices yet."
+
+=== P5: /parent/meetings ===
+- Header: "Request meeting" primary button.
+- Tabs: Upcoming · Requests · Past.
+- Upcoming: rows - date/time, child, teacher, topic, join link/location.
+- Requests: rows with status chip (Pending, Confirmed, Rescheduled, 
+  Declined). Rescheduled row mein teacher ka proposed time + Accept/
+  Decline buttons. Pending row mein Cancel option.
+- Past: read-only history, teacher's notes (if any).
+- Request dialog: child select, teacher select (uss child ke teachers 
+  tak filtered), 2-3 preferred date/time slots, topic select, notes 
+  textarea, Send button.
+- Empty state: "No meetings scheduled."
+
+=== P6: /parent/support ===
+Default Option B banao (contact card): school contact details, office 
+hours, "Request a meeting" shortcut button (→ P5 dialog). Simple, ek 
+card based page.
+
+=== P7: /parent/profile ===
+- Account card: name, email (read-only look), phone (editable field).
+- Linked children: read-only list (name, relationship, link date). 
+  "Contact admin" note niche.
+- Notification preferences: toggle switches per channel (email) - 
+  grades posted, attendance alerts, new invoices/overdue, meeting 
+  updates.
+- Bottom mein sticky Save bar.
+
+=== P8: Notifications Drawer (global, bell se khulta hai) ===
+- Desktop: right-side panel. Mobile: full-screen sheet.
+- Groups: Today / Earlier - har item: icon, text, child tag, relative 
+  time, unread dot.
+- Header mein "Mark all read" + per-child filter dropdown.
+- Item click → relevant page pe deep-link (dummy navigation).
+
+=== CORE RULES (har parent page pe lagu) ===
+- Mobile-first: pehle 390px width ke hisab se design socho, phir 
+  tablet/desktop ke liye expand karo. Proper breakpoints: mobile 
+  (<640px stacked), tablet (640-1024px), desktop (>1024px).
+- READ-ONLY: Parent kahin bhi grades, attendance ya invoices edit 
+  nahi kar sakta - koi edit/delete button in areas mein mat rakhna. 
+  Sirf meeting requests, profile aur notification settings writable 
+  hain (UI level pe).
+- Child-scoped: har child-specific page pe wahi child ka data dikhana 
+  hai jo currently switcher mein selected hai (dummy filter logic se 
+  simulate karo, taake baad mein backend filter yahin lagana aasan ho).
+- "Is my child okay?" ka jawab bina scroll kiye dikhna chahiye (Home 
+  row 1 ke child cards mein attendance ring + grade + due assignments 
+  - sab compact aur upar hi visible hon).
+- Dates "Thu 22 Oct, 5:00 PM" format, amounts "Rs 12,000" format - 
+  student dashboard jesa hi consistent.
+- Buttons busy/loading state dikhayen jab "request" simulate ho raha 
+  ho. Forms field errors dikhayen, typed data preserve rahe.
+- Keyboard accessible: dialogs focus trap + Escape close, tabs arrow 
+  key navigation.
+
+=== DATA SCOPING NOTE (for future backend - UI mein isi tarah structure 
+    karo) ===
+- Mock data is tarah organize karo ke parent ka data sirf UNKI apni 
+  linked children tak scoped dikhe - koi "all students" list kahin na 
+  ho. Mock file mein clearly ek "currentParent" object ho jiske 
+  "linkedChildren" array se hi saara data derive ho (jese 
+  requireParentOf concept UI mein bhi reflect ho - taake backend lagate 
+  waqt sirf query replace karni pade, logic nahi).
+- Koi server action, API route, auth, ya database bilkul mat likhna - 
+  sirf UI + dummy/mock state.
+
+=== IMPORTANT ===
+- Admin ya student dashboard ki KOI file edit nahi karni (globals.css, 
+  admin/, student/, shared components ke defaults) - sirf naya 
+  parent/ aur invite/ folder add karne hain.
+- Shared components (list-toolbar, pagination, empty-state, 
+  loading-skeleton, error-state, chart components agar student mein 
+  bane) reuse karo, duplicate mat banao.
+- Same professional cream/maroon theme - admin aur student jitni hi 
+  clean minimal UI, koi naya color scheme ya playful/cartoon look nahi.
+- Code clean aur modular rakho (typed mock data, reusable components, 
+  props-driven) taake backend add karte waqt mushkil na ho.
+- Fully responsive: mobile, tablet, desktop teeno ke liye properly 
+  test/design karo.
+
+Pehle layout.tsx (parent shell: sidebar + bottom tabs + child switcher 
++ notifications drawer) banao, phir P0 invite page, phir ek-ek karke 
+P1 Home, P2 Children, P3 Child detail (sab 5 tabs), P4 Fees, P5 
+Meetings, P6 Support, P7 Profile.
+
+
+
+
+
+=====================================================================
+TEACHER DASHBOARD PROMPT (isi project ke andar banao, admin/student/
+parent wale hi pattern se - niche di gayi tamam details follow karo)
+=====================================================================
+
+Ab isi Next.js project mein TEACHER DASHBOARD banao. Admin, student aur 
+parent dashboard jis pattern se bane hain (src/app/admin/..., 
+src/app/student/..., src/app/parent/... + components/features/hooks 
+split), BILKUL WAHI pattern follow karo teacher ke liye. SIRF FRONTEND/UI 
+banana hai, koi backend/API/database bilkul nahi likhna (backend main 
+khud se likhonga). Saara data dummy/mock hoga (hardcoded arrays, local 
+state) - lekin code CLEAN aur modular hona chahiye, typed mock data, 
+props-driven components, taake baad mein backend connect karte waqt data 
+sirf replace karna pade, structure nahi.
+
+=== GLOBALS.CSS / THEME ===
+Koi nayi theme NAHI banani, koi change nahi karni. Jo globals.css 
+admin/student/parent teeno ke liye use ho raha hai (cream/maroon tokens - 
+background #FBF8F3, card #FFFFFF, secondary #F3EBE4, border #E8DFD6, 
+foreground #2A1A20, muted-foreground #6E5A60, primary #7F1D3A, accent 
+#F1E3E6, ring #7F1D3A, light+dark mode) EXACT WAHI use karo. Koi existing 
+file (admin/, student/, parent/, globals.css, shared components) edit 
+nahi karni - sirf naya teacher/ folder add karna hai.
+
+=== FOLDER STRUCTURE (isi project, pehle wale pattern se) ===
+
+src/app/teacher/
+├── layout.tsx                        (teacher shell: sidebar desktop + 
+│                                       bottom tabs mobile)
+├── page.tsx                          (T1 - Dashboard)
+├── students/
+│   ├── page.tsx                      (T2 - My Students)
+│   └── [id]/
+│       ├── page.tsx                  (T3 - Student detail, tabs wrapper)
+│       ├── student-header-card.tsx
+│       ├── student-tabs.tsx
+│       ├── overview-tab.tsx
+│       ├── assignments-tab.tsx
+│       ├── attendance-tab.tsx
+│       └── notes-tab.tsx
+├── classes/
+│   ├── page.tsx                      (T4 - Classes list)
+│   ├── create-class-dialog.tsx
+│   └── [id]/
+│       ├── page.tsx                  (T5 - Class detail, tabs wrapper)
+│       ├── class-tabs.tsx
+│       ├── roster-tab.tsx
+│       ├── class-assignments-tab.tsx
+│       ├── class-attendance-tab.tsx
+│       ├── class-materials-tab.tsx
+│       └── class-settings-tab.tsx
+├── requests/
+│   ├── page.tsx                      (T6 - Enrollment requests, 
+│   │                                   Pending/History tabs)
+│   ├── requests-list.tsx
+│   ├── request-detail-drawer.tsx
+│   └── decline-dialog.tsx
+├── assignments/
+│   ├── page.tsx                      (T7 - Assignments list)
+│   ├── assignments-table.tsx
+│   ├── new/
+│   │   └── page.tsx                  (T8 - new assignment form)
+│   └── [id]/
+│       ├── page.tsx                  (T9 - assignment + submissions)
+│       ├── submissions-table.tsx
+│       ├── grading-panel.tsx         (split view: left submission, 
+│       │                               right grade/feedback)
+│       └── edit/
+│           └── page.tsx              (T8 - edit assignment form, 
+│                                       reuses assignment-form.tsx)
+├── grading/
+│   ├── page.tsx                      (T10 - Grading queue)
+│   └── grading-queue-list.tsx
+├── gradebook/
+│   ├── page.tsx                      (T11 - Gradebook grid)
+│   ├── gradebook-grid.tsx
+│   └── grade-cell-popover.tsx
+├── attendance/
+│   ├── page.tsx                      (T12 - Take attendance / History 
+│   │                                   tabs)
+│   ├── take-attendance-roster.tsx
+│   └── attendance-history.tsx
+├── schedule/
+│   ├── page.tsx                      (T13 - Day/Week/Month calendar)
+│   ├── schedule-calendar.tsx
+│   └── meeting-requests-panel.tsx
+├── materials/
+│   ├── page.tsx                      (T14 - Materials list)
+│   ├── materials-list.tsx
+│   └── upload-material-dialog.tsx
+├── support/
+│   ├── page.tsx                      (T15 - Tickets list)
+│   ├── tickets-table.tsx
+│   ├── new-ticket-dialog.tsx
+│   └── [id]/
+│       └── page.tsx                  (ticket thread view)
+└── profile/
+    └── page.tsx                      (T16 - Profile, availability, 
+                                        notification settings)
+
+=== SHARED COMPONENTS (reuse, don't duplicate) ===
+- components/shared/ (list-toolbar, pagination, empty-state, 
+  loading-skeleton, error-state, chart components) - exact same reuse 
+  jo admin/student/parent mein use ho rahe hain.
+- components/layout/ mein teacher ke liye alag se (admin/student/parent 
+  se mix mat karna):
+  - teacher-sidebar.tsx       (240px, collapsible to icons)
+  - teacher-topbar.tsx        (breadcrumb/title left, global search + 
+    bell + user menu right)
+  - teacher-mobile-drawer.tsx (sidebar becomes drawer on tablet/mobile)
+  - teacher-bottom-tabs.tsx   (mobile, 5 tabs: Home, Students, 
+    Attendance, Grading, More)
+  - teacher-nav-config.ts
+- components/shared/notifications-drawer.tsx pattern reuse karo (agar 
+  parent mein bana tha to usi ko generic banao, teacher ke liye bhi use 
+  ho sake - groups Today/Earlier, mark all read, deep-link).
+
+=== TEACHER SHELL (layout.tsx) ===
+Desktop:
+- Left sidebar 240px, collapsible to icons: logo, nav items (in this 
+  exact order): Dashboard, My Students, Classes, Enrollment Requests 
+  (badge: pending count), Assignments, Grading (badge: ungraded count), 
+  Gradebook, Attendance, Schedule (badge: meeting requests), Materials, 
+  Support, Profile. Bottom: teacher card (avatar, name, "Teacher").
+- Top bar: page title/breadcrumb left, right side: global search 
+  (students/classes/assignments - dummy input), bell with unread badge, 
+  user menu.
+- Content max-width ~1280px, 24px padding.
+
+Tablet/Mobile:
+- Sidebar → drawer (hamburger open/close, sheet component).
+- Mobile bottom tab bar (5 tabs, fixed): Home, Students, Attendance, 
+  Grading, More (More → sheet with Classes, Requests, Assignments, 
+  Gradebook, Schedule, Materials, Support, Profile, Sign out).
+
+Page header pattern (every page): title, one-line description, primary 
+action right side, filter/tab row beneath.
+
+Har page pe teen states: loading skeleton, empty state (icon + 1 line + 
+action), error with retry - shared components reuse karke.
+
+=== T1: /teacher (Dashboard) ===
+- Row 0 greeting bar: "Good morning, [name]", today's date, quick 
+  actions (New assignment, Take attendance, Add material - buttons).
+- Row 1: 4 KPI cards (clickable, deep-link): Active students → T2, 
+  Pending enrollment requests → T6, Submissions to grade → T10, 
+  Sessions today → T12.
+- Row 2, desktop 2 columns (65/35):
+  - Today's schedule (left): vertical timeline, time + class/one-on-one 
+    + student name(s) + "Take attendance" button per session. Current 
+    session highlighted, past ones muted.
+  - Needs attention (right): prioritized list - ungraded submissions 
+    older than 3 days, new enrollment requests, new parent meeting 
+    requests, classes with low attendance. Each row links to the item.
+- Row 3, 2 columns (50/50): Recent submissions table (student, 
+  assignment, submitted time, status chip, Grade button - 5 rows, 
+  "View all" → T10); Upcoming deadlines (assignments due in 7 days, 
+  submitted/total progress bar).
+- Row 4, 2 columns (50/50): Class performance bar chart (avg grade per 
+  class); Submission rate line chart (last 4 weeks) - recharts use 
+  karo.
+- Empty state (new teacher, no students): checklist card replacing Rows 
+  1-4: "Complete your profile · Wait for enrollment requests · Create 
+  your first class."
+
+=== T2: /teacher/students (My Students) ===
+- Header: title, student count, search box, export CSV button (UI 
+  only).
+- Filters: board, level, subject, type (class/one-on-one), status 
+  (active/completed).
+- Table columns: avatar+name, board/level, subject(s), type, 
+  attendance % (progress bar), average grade, last activity, row menu 
+  (View, Message parent, Request meeting).
+- Sortable columns, pagination 20/page. No bulk actions. Row click → T3.
+- Empty state: "No students yet. Accept an enrollment request." + link 
+  to T6.
+
+=== T3: /teacher/students/[id] (Student Detail) ===
+- Breadcrumb: My Students / [Name].
+- Header card: avatar, name, board/level, subjects taught by this 
+  teacher, enrollment type+class, parent contact (name, email, 
+  "Request meeting" button).
+- Tabs: Overview · Assignments · Attendance · Notes.
+  - Overview: 3 stat cards (avg grade, attendance %, on-time submission 
+    %), grade trend line chart (30 days/term selector), recent 
+    activity feed.
+  - Assignments: table (title, due date, submitted date, grade, status 
+    chip). Row click opens grading panel (reuse T9's grading-panel 
+    component).
+  - Attendance: month calendar with status markers, summary counts, 
+    absences/lates list.
+  - Notes: private teacher notes list (newest first), "Add note" 
+    textarea, lock icon + "Only you can see these notes" line.
+
+=== T4: /teacher/classes ===
+- Header: "Create class" button → dialog (name, course, schedule 
+  days/times, capacity, meeting link).
+- Toggle: Current / Previous batches.
+- Card grid (3 desktop, 1 mobile): class name, course (subject, level, 
+  board), student count/capacity bar, schedule, next session, "Open" 
+  button.
+- Previous batches: read-only cards, completion date + final average.
+- Empty state: "No classes yet. Create one to group students."
+
+=== T5: /teacher/classes/[id] ===
+- Header: class name, course, schedule, capacity bar, Edit + Archive 
+  actions.
+- Tabs: Roster · Assignments · Attendance · Materials · Settings.
+  - Roster: table (student, avg grade, attendance %, Remove action). 
+    "Add student" note: "only via accepting a request" (link to T6).
+  - Assignments: filtered list for this class + "New assignment" 
+    button.
+  - Attendance: grid - students as rows, session dates as columns, 
+    P/A/L/E markers (text labels, not color-only).
+  - Materials: file list + upload button.
+  - Settings: name, schedule, capacity, meeting link, archive option.
+
+=== T6: /teacher/requests (Enrollment Requests) ===
+- Tabs: Pending (count badge) · History.
+- List rows (table-like, not cards): student name, board/level, 
+  requested subject, student's message, requested date.
+- Row actions: "Accept into class" (dropdown of classes with open 
+  seats), "Accept one-on-one", "Decline" (dialog with reason textarea).
+- Detail drawer (row click): student profile summary, parent info, 
+  subject match check, same three actions.
+- Warning chip if board/level mismatch with teacher's courses.
+- History tab: accepted/declined requests, date + outcome, read-only.
+
+=== T7: /teacher/assignments ===
+- Header: "New assignment" button. Filters: class, status (Draft/
+  Published/Closed), due date range.
+- Table: title, target (class or student), due date, submitted/total 
+  progress bar, graded count, status chip, row menu (Edit, Duplicate, 
+  Close).
+- Row click → T9.
+
+=== T8: /teacher/assignments/new and /[id]/edit ===
+- Single-column form (max-width ~720px), sticky summary panel right 
+  side on desktop.
+- Fields: title, description (rich text editor - simple contentEditable 
+  ya textarea styled as rich text UI), target (class or specific 
+  enrollment - select), due date+time, maximum grade (default 100), 
+  attachments upload, "allow late submissions" toggle, late penalty 
+  (shown only if late allowed).
+- Summary panel: target name, number of students to be notified, due 
+  date, status.
+- Sticky footer: Cancel · Save draft · Publish (Publish opens confirm 
+  dialog showing student count).
+- Edit mode: after submissions exist (dummy flag), target + max grade 
+  fields locked/disabled with explanation line below them.
+
+=== T9: /teacher/assignments/[id] ===
+- Header: title, class, due date, status chip, counts (Submitted/
+  Missing/Graded), Edit + Close actions.
+- Filter tabs: All · Submitted · Missing · Graded · Late.
+- Table: student, submitted at, status chip, grade, Grade button. 
+  Missing rows: "Remind" action.
+- Grading panel (full-width split view, opens on Grade click):
+  - Left (60%): submission text + file preview/download.
+  - Right (40%): grade input (0 to max), feedback textarea, "Return 
+    for resubmission" toggle.
+  - Footer: Save · Save & next · Previous.
+  - Keyboard shortcut note: Cmd/Ctrl+Enter = save and next (implement 
+    the keyboard listener, UI only - no real save).
+
+=== T10: /teacher/grading (Grading Queue) ===
+- Header: "X left to grade" counter, filters (class, assignment), sort 
+  (oldest first default).
+- Rows: student, assignment, class, submitted time, days waiting 
+  (flagged/highlighted when over 3 days).
+- Row click → same split grading panel as T9; Save & next moves through 
+  queue (simulate with local state/index).
+- Empty state: "All caught up."
+
+=== T11: /teacher/gradebook ===
+- Controls: class selector (required dropdown), term filter, export 
+  CSV button.
+- Grid: rows = students, columns = assignments (ordered by due date), 
+  last column = average. Header row + first column frozen/sticky. 
+  Missing cells show dash, late cells show a flag icon.
+- Cell click → inline edit popover (grade + feedback fields).
+- Footer row: class average per assignment.
+- Mobile: horizontal scroll, student column frozen.
+- Empty state: "No assignments in this class yet."
+
+=== T12: /teacher/attendance (Touch-first) ===
+- Top controls: date picker (default today), class/session selector. 
+  Tabs: Take attendance · History.
+- Take attendance: roster list, large touch-friendly rows - student 
+  name + 4-way segmented control (Present/Absent/Late/Excused) + note 
+  icon. "Mark all present" shortcut button at top.
+- Sticky bottom bar: summary counts ("18 present · 2 absent") + Save 
+  button. Confirmation toast on save (UI simulate). Saved sessions show 
+  "Edited" badge + timestamp.
+- Past dates: editable look for 7 days (dummy rule), read-only styling 
+  after.
+- History tab: month grid report by class, per-student attendance %, 
+  CSV export button.
+
+=== T13: /teacher/schedule ===
+- Header: Day/Week/Month toggle, "Today" button, date navigation 
+  arrows.
+- Calendar (main area): class sessions, one-on-one sessions, parent 
+  meetings as distinct event types with color/icon legend. Click event 
+  → popover (details + quick actions: Take attendance, Open class, 
+  Join link).
+- Right panel (collapsible): Meeting requests - each shows parent, 
+  student, topic, proposed times. Actions: Confirm · Propose new time · 
+  Decline. Count badge matches sidebar.
+- Availability: teacher's weekly hours (from T16) shown as shaded 
+  background slots on calendar (dummy data).
+
+=== T14: /teacher/materials ===
+- Header: upload button. Filters: class/course, file type.
+- File list: type icon, name, class/course, size, uploaded date, row 
+  menu (Download, Replace, Delete).
+- Upload dialog: file picker (drag-drop + button), class/course target 
+  select, title, optional description.
+- Empty state: "No materials yet."
+
+=== T15: /teacher/support ===
+- Header: "New ticket" button. Status tabs: Open · Resolved.
+- Ticket list: subject, category, last update, status chip.
+- New ticket dialog: subject, category select, description, optional 
+  attachment.
+- Thread view (row click): message history (conversation style), reply 
+  box, status line. Escalation shown only as a status badge change 
+  (teacher can't trigger it).
+
+=== T16: /teacher/profile ===
+- Identity card: name, email (read-only look), role badge.
+- Editable: bio textarea, phone, weekly availability grid (days × 
+  hours - clickable grid cells to toggle available slots).
+- Read-only: taught courses (list, managed by admin) + "Request change" 
+  link that opens T15 new ticket dialog pre-filled.
+- Notification preferences: email toggles - new enrollment requests, 
+  new submissions, meeting requests, support replies.
+- Sticky Save bar at bottom.
+
+=== T17: Notifications Drawer (global) ===
+- Bell click → right panel (desktop) / full-screen sheet (mobile).
+- Groups: Today / Earlier - icon, text, class/student tag, relative 
+  time, unread dot.
+- "Mark all read" in header. Item click → deep-link (dummy navigation).
+
+=== CORE RULES (har teacher page pe lagu) ===
+- Desktop-first design yahan (teacher mostly desk pe grade/plan karta 
+  hai), lekin FULLY RESPONSIVE - tablet aur mobile dono properly test 
+  karo. Attendance page (T12) touch-optimized hona chahiye (bade 
+  touch-friendly buttons/controls) kyunki wo tablet/phone pe use hoga.
+- Scoped to own students: koi bhi list/table/page sirf "is teacher ke 
+  apne" students/classes/assignments dikhaye - mock data is tarah 
+  structure karo ke ek "currentTeacher" object ho jiska data isi se 
+  derive ho (taake backend lagate waqt sirf query replace ho, logic 
+  nahi) - UI mein koi "all students" list kahin na ho jo sab 
+  teachers/students dikhaye.
+- Few clicks for daily tasks: Home (T1) se Take attendance, Grade aur 
+  Accept request har ek 2 clicks ya kam mein reachable hone chahiye 
+  (quick action buttons/deep-links se).
+- Queue driven: Grading queue (T10) aur Enrollment requests (T6) mein 
+  "Save & next" / sequential flow ka UI pattern follow karo.
+- Dates "Thu 22 Oct, 5:00 PM" format, amounts "Rs 12,000" format - 
+  baaki dashboards jaisa hi consistent.
+- Forms field errors dikhayen, typed data preserve rahe. Buttons busy/
+  loading state dikhayen submit ke time.
+- Keyboard accessible: dialogs focus trap + Escape close, tabs arrow 
+  key navigation, grading panel mein Cmd/Ctrl+Enter shortcut.
+- Har page pe loading skeleton, empty state, error+retry - koi blank 
+  area kabhi nahi.
+
+=== DATA SCOPING NOTE (for future backend - UI mein structure isi 
+    tarah rakho) ===
+- Mock data file(s) mein ek clear "currentTeacher" object ho, jiske 
+  "students", "classes", "assignments" sab usi teacher ke hisab se 
+  filtered/derived hon - jese requireTeacherOf concept UI ki data 
+  shape mein bhi reflect ho.
+- Assignment create/edit form, quiz-related UI (agar add karte ho), 
+  attendance save - sab ka "submit" handler abhi sirf local state 
+  update kare (dummy), real API call bilkul nahi - lekin function 
+  clearly named/isolated ho (jese handleSaveAttendance, 
+  handlePublishAssignment) taake baad mein wahi function backend call 
+  se replace ho sake.
+- Koi server action, API route, auth, ya database bilkul mat likhna.
+
+=== IMPORTANT ===
+- Admin, student, ya parent dashboard ki KOI file edit nahi karni 
+  (globals.css, admin/, student/, parent/, shared components ke 
+  defaults) - sirf naya teacher/ folder add karna hai.
+- Shared components reuse karo (list-toolbar, pagination, empty-state, 
+  loading-skeleton, error-state, chart wrappers) - duplicate mat banao.
+- Same professional cream/maroon theme, same quality/polish level jitna 
+  admin/student/parent dashboards mein hai - koi naya color scheme ya 
+  playful/cartoon look nahi.
+- Code clean, modular, typed mock data, props-driven components - 
+  backend add karte waqt aasan ho.
+- Fully responsive: desktop (primary), tablet aur mobile teeno properly 
+  design/test karo, khaas kar Attendance page touch-friendly ho.
+
+Pehle layout.tsx (teacher shell: sidebar + bottom tabs + nav-config) 
+banao, phir T16 profile, T6 requests, T4/T5 classes, T2/T3 students, 
+T7/T8/T9 assignments, T10 grading queue, T11 gradebook, T12 attendance, 
+T14 materials, T13 schedule, T15 support, aur sabse end mein T1 
+Dashboard (kyunki wo sab se data aggregate karta hai).
+
+
+
+
+
+
+
+
+
+
+
+
+=====================================================================
+AUDIT + FIX PROMPT (sab 4 dashboards complete/fix karne ke liye - 
+isko instructions.txt ke sabse end mein add karo)
+=====================================================================
+
+Ab mujhe is poore project ka FULL AUDIT aur COMPLETION chahiye. Admin, 
+student, parent aur teacher - charon dashboards upar instructions.txt 
+mein diye gaye prompts ke hisab se bane the, lekin kaam adhoora reh gaya 
+hai aur kuch cheezein missing hain. Neeche di gayi steps se poora kaam 
+check karo aur jo bhi missing/incomplete hai wo complete karo.
+
+=== STEP 1: HAR DASHBOARD KA ROUTE-BY-ROUTE CHECK ===
+Instructions.txt mein jo bhi pages/routes list kiye gaye the (admin wale 
+sidebar items, student ke P1-P8/F3-F7 pages, parent ke P0-P8, teacher ke 
+T1-T17) - un sabko ek-ek karke check karo ke:
+1. Us route ki page.tsx file actually bani hai ya nahi.
+2. Us page mein jo sections/components bolay gaye the (jese har list 
+   page mein search+filter, table, pagination, empty state, loading 
+   skeleton, error state) - sab maujood hain ya kuch chhoot gaya.
+3. Sidebar/nav mein har page ka link maujood hai aur sahi route pe 
+   jata hai.
+4. Dynamic routes (jese [id] wale pages - student detail, child detail, 
+   assignment detail, class detail) actually kaam karte hain ya sirf 
+   static placeholder hain.
+
+Jo bhi route missing ho, usko poora banao - usi dashboard ke us section 
+mein di gayi exact requirement follow karke (instructions.txt mein wahi 
+page ka description dobara padho aur usi hisab se banao).
+
+=== STEP 2: THEME TOGGLE - SABSE ZAROORI FIX ===
+Har CHAARON dashboard (admin, student, parent, teacher) ke Profile ya 
+Settings page mein ek THEME TOGGLE section hona chahiye:
+- Light / Dark / System - teen options, button-group UI (sun/moon/
+  monitor icons se, shadcn + lucide-react).
+- next-themes provider (jo pehle se admin ke liye setup hua tha) poori 
+  app (saare 4 dashboards) ke liye ek hi shared provider se kaam kare - 
+  alag-alag provider har dashboard ke liye mat banana.
+- Check karo ke providers/theme-provider.tsx root layout.tsx (jo sabse 
+  upar hai, app/layout.tsx) mein wrap ho raha hai, taake theme state 
+  SAARE dashboards mein shared/persist rahe (ek dashboard mein dark mode 
+  on karo to dusre mein bhi dark hi rahe - localStorage se persist, jo 
+  next-themes khud handle karta hai).
+- Jahan bhi ye toggle missing hai (student settings, parent profile, 
+  teacher profile - jahan jahan bhi nahi bana), wahan add karo.
+- Theme switch turant poore page pe apply ho - background, card, text, 
+  border - koi hardcoded color kahin reh na gaya ho jo theme ke sath na 
+  badle (saari files grep karke check karo ke kahin direct hex colors 
+  jese #FBF8F3 ya #7F1D3A use to nahi hue, sab CSS variable 
+  (var(--background) etc via Tailwind classes) se hi aa rahe hon).
+
+=== STEP 3: CROSS-DASHBOARD CONSISTENCY CHECK ===
+- Globals.css SIRF EK hi honi chahiye (saare dashboards isi ek file ko 
+  share karein) - check karo ke kisi dashboard ne apni alag theme/colors 
+  to nahi bana li.
+- Shared components (list-toolbar, pagination, empty-state, 
+  loading-skeleton, error-state) - check karo ke sab dashboards inhi ko 
+  import/reuse kar rahe hain, kisi ne duplicate copy to nahi bana li 
+  apne folder ke andar.
+- UI quality (spacing, rounded corners, shadows, typography) char'on 
+  dashboards mein ek jaisi professional honi chahiye - koi ek dashboard 
+  dusre se "kam polished" ya different style ka nahi lagna chahiye.
+- Mobile responsive behavior (sidebar → drawer/bottom-tabs, table → 
+  stacked cards, dialog → bottom sheet) sab 4 dashboards mein consistent 
+  honi chahiye.
+
+=== STEP 4: MISSING FUNCTIONAL PIECES (UI level, dummy data ke sath) ===
+Har dashboard ke instructions wale section dobara se line-by-line padho 
+aur in cheezon ko specifically verify/complete karo:
+
+**Admin:** sab list pages (Requests, Users, Boards, Courses, Books, 
+Invoices, Tickets, Audit log, Analytics, Admins) - role-based "Admins" 
+item sirf super_admin ko dikhe, role-picker mein admin/super_admin hide 
+logic kaam kar raha ho ("View as" switch se test karo).
+
+**Student:** AI Assistant floating button (sidebar ke bahar, saare pages 
+pe fixed visible), onboarding/parent invite flow, assignment 
+submit+lock/unlock form, quizzes section (hidden flag ke peeche sahi 
+se hai ya galti se visible reh gaya).
+
+**Parent:** child switcher (Home, Fees, Meetings, Notifications ke 
+across persist), invite acceptance page (/invite/[token]), har child 
+page read-only hai (koi edit button to nahi reh gaya kahin), fees mein 
+pay button bilkul nahi hona chahiye (double check).
+
+**Teacher:** grading panel (split view + Save & next), gradebook grid 
+(frozen header/column), attendance (touch-friendly segmented control + 
+mark all present), schedule calendar, sidebar badges (pending requests 
+count, ungraded count, meeting requests count) - dummy numbers se sahi 
+dikh rahe hain ya nahi.
+
+=== STEP 5: FINAL REPORT ===
+Jab sab fix ho jaye, ek chhota summary do (chat mein, koi file nahi) ke:
+1. Kaun se routes/pages missing thay jo ab add kiye.
+2. Theme toggle kahan-kahan add kiya.
+3. Koi aisi cheez jo abhi bhi incomplete hai (agar koi genuine blocker 
+   ho) - clearly batao taake pata chale kya reh gaya.
+
+=== IMPORTANT ===
+- Backend/API/database/auth bilkul kuch mat likhna - ye sirf UI 
+  completion/fix task hai.
+- Jo already sahi/complete bana hua hai usko dobara se rewrite mat 
+  karo - sirf jo missing/broken hai wahi fix/add karo.
+- Koi naya color scheme ya naya design pattern mat introduce karo - jo 
+  cream/maroon theme pehle se defined hai usi ko follow karna hai, bas 
+  use HAR jagah consistently lagana hai.
